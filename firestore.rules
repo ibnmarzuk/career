@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profile data
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+    
+    // User Resumes collection
+    match /resumes/{resumeId} {
+      allow read, write: if isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid
+      );
+    }
+    
+    // Resume Version snapshots
+    match /resume_versions/{versionId} {
+      allow read, write: if isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid
+      );
+    }
+    
+    // User Cover Letters
+    match /cover_letters/{letterId} {
+      allow read, write: if isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid || request.resource.data.userId == request.auth.uid
+      );
+    }
+    
+    // User Analytics Events
+    match /analytics_events/{eventId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

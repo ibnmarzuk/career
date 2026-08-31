@@ -1,0 +1,6 @@
+{
+  "name": "ResumeForge AI",
+  "description": "AI-powered resume and CV builder, ATS optimizer, job description matcher, and career application toolkit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
