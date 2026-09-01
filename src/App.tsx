@@ -16,6 +16,7 @@ import { PrintPreviewModal } from './components/builder/PrintPreviewModal';
 import { ResumeImporterModal } from './components/importer/ResumeImporterModal';
 import { Toast, ToastMessage } from './components/common/Toast';
 import { DEFAULT_CUSTOMIZATION } from './types/resume';
+import { FileText } from 'lucide-react';
 
 // Authentication Pages & Guard
 import { useAuth } from './context/AuthContext';
@@ -31,12 +32,21 @@ import { LandingPage } from './components/landing/LandingPage';
 export function App() {
   const { user: authUser, isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
-  // Navigation State - initialized from hash if present, defaults to landing
-  const [currentView, setCurrentView] = useState<string>(() => {
-    const hash = window.location.hash.replace('#', '').replace('/', '').trim();
-    if (hash) return hash;
+  // Helper to resolve current view from hash or pathname
+  const resolveViewFromLocation = (): string => {
+    try {
+      const hash = window.location.hash.replace('#', '').replace(/^\//, '').trim();
+      if (hash) return hash;
+      const pathname = window.location.pathname.replace(/^\//, '').trim();
+      if (pathname && pathname !== 'index.html') return pathname;
+    } catch {
+      // ignore
+    }
     return 'landing';
-  });
+  };
+
+  // Navigation State - initialized from hash or pathname, defaults to landing
+  const [currentView, setCurrentView] = useState<string>(resolveViewFromLocation);
 
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [activeResumeId, setActiveResumeId] = useState<string>('');
@@ -72,16 +82,20 @@ export function App() {
     window.location.hash = view;
   };
 
-  // Listen for browser hash changes
+  // Listen for browser hash and popstate changes
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '').replace('/', '').trim();
-      if (hash && hash !== currentView) {
-        setCurrentView(hash);
+    const handleLocationChange = () => {
+      const view = resolveViewFromLocation();
+      if (view && view !== currentView) {
+        setCurrentView(view);
       }
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, [currentView]);
 
   // Initialize data on mount
@@ -783,6 +797,45 @@ export function App() {
                       Open Resume Builder
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+            {![
+              'dashboard',
+              'ai-generator',
+              'generator',
+              'ai-resume-generator',
+              'my-resumes',
+              'resumes',
+              'builder',
+              'analyzer',
+              'ats-analyzer',
+              'optimizer',
+              'job-matcher',
+              'matcher',
+              'cover-letter',
+              'coverletter',
+              'templates',
+              'settings',
+              'pricing',
+              'career-tools',
+              'admin',
+            ].includes(currentView) && (
+              <div className="max-w-2xl mx-auto py-12 text-center space-y-4">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+                  <FileText className="w-8 h-8" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">Page Not Found</h2>
+                <p className="text-sm text-slate-500 max-w-md mx-auto">
+                  The section or view you requested does not exist or has moved. Return to the dashboard to continue editing your resumes.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => navigateTo('dashboard')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 px-5 rounded-lg shadow-xs transition-colors cursor-pointer"
+                  >
+                    Go to Dashboard
+                  </button>
                 </div>
               </div>
             )}
