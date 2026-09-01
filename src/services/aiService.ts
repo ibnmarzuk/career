@@ -64,20 +64,45 @@ export interface CoachChatResponse {
 
 export class AIService {
   private static async post<T>(endpoint: string, body: any): Promise<T> {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
 
-    if (!response.ok) {
-      const errJson = await response.json().catch(() => ({ error: 'Network or server error' }));
-      throw new Error(errJson.error || `Server responded with ${response.status}`);
+      if (!response.ok) {
+        let errorMessage = `Request failed (Status ${response.status}: ${response.statusText || 'Error'})`;
+        try {
+          const rawText = await response.text();
+          try {
+            const parsed = JSON.parse(rawText);
+            if (parsed && parsed.error) {
+              errorMessage = parsed.error;
+            }
+          } catch {
+            if (rawText && rawText.length < 200) {
+              errorMessage = rawText;
+            }
+          }
+        } catch {
+          // Keep default message
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        throw new Error('AI service request timed out. Please try again.');
+      }
+      if (err.message && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
+        throw err;
+      }
+      throw new Error('AI connection temporarily unavailable. Please check your network or try again.');
     }
-
-    return response.json();
   }
 
   // 1. Analyze Resume with full ATS breakdown
